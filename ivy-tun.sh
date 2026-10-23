@@ -11,7 +11,7 @@
 set -o pipefail
 umask 077
 
-SCRIPT_VERSION="2.1"
+SCRIPT_VERSION="2.2"
 
 # ------------------------------------------------------------
 # Đường dẫn
@@ -307,6 +307,87 @@ select_package() {
     fi
     warn_msg "Package name không hợp lệ."
     return 1
+}
+
+# Chọn nhiều package: nhập số cách nhau bằng dấu cách, 0 để xác nhận.
+SELECTED_PKGS=()
+
+select_multiple_packages() {
+    local -a all=() tokens=()
+    local input token pkg idx p exists confirm
+    SELECTED_PKGS=()
+    mapfile -t all < <(get_all_installed_packages)
+    if [ "${#all[@]}" -eq 0 ]; then
+        warn_msg "Không tìm thấy package nào."
+        return 1
+    fi
+
+    printf '%s┌── [ CHỌN PACKAGE ] ──────────────────────┐%s\n' "$C_CYAN" "$C_RESET"
+    for idx in "${!all[@]}"; do
+        printf '│ %s[%d]%s %s\n' "$C_MAGENTA" "$((idx + 1))" "$C_RESET" "${all[$idx]}"
+    done
+    printf '%s└──────────────────────────────────────────┘%s\n' "$C_CYAN" "$C_RESET"
+    printf ' %sNhập số package, cách nhau bằng dấu cách. 0 = xác nhận.%s\n' "$C_GRAY" "$C_RESET"
+
+    while true; do
+        printf '\n%sPackage (0=xác nhận): %s' "$C_GREEN" "$C_RESET"
+        read -r input || return 1
+        input="${input//$'\r'/}"
+        confirm=0
+        tokens=()
+        read -r -a tokens <<< "$(printf '%s' "$input" | tr ',' ' ')"
+        for token in "${tokens[@]}"; do
+            if [ "$token" = "0" ]; then
+                confirm=1
+                break
+            fi
+
+            if [[ "$token" =~ ^[0-9]+$ ]]; then
+                idx=$((token - 1))
+                if [ "$idx" -lt 0 ] || [ "$idx" -ge "${#all[@]}" ]; then
+                    warn_msg "Số $token không hợp lệ."
+                    continue
+                fi
+                pkg="${all[$idx]}"
+            elif is_valid_pkg "$token"; then
+                pkg="$token"
+            else
+                warn_msg "Package không hợp lệ: $token"
+                continue
+            fi
+
+            exists=0
+            for p in "${SELECTED_PKGS[@]}"; do
+                if [ "$p" = "$pkg" ]; then
+                    exists=1
+                    break
+                fi
+            done
+            if [ "$exists" -eq 1 ]; then
+                printf ' %s•%s %s (đã chọn)\n' "$C_GRAY" "$C_RESET" "$pkg"
+            else
+                SELECTED_PKGS+=("$pkg")
+                printf ' %s✓%s Đã thêm: %s\n' "$C_GREEN" "$C_RESET" "$pkg"
+            fi
+        done
+
+        if [ "$confirm" -eq 1 ]; then
+            if [ "${#SELECTED_PKGS[@]}" -eq 0 ]; then
+                warn_msg "Chưa chọn package nào."
+                continue
+            fi
+            break
+        fi
+        if [ -z "$input" ]; then
+            warn_msg "Nhập số package hoặc 0 để xác nhận."
+        fi
+    done
+
+    printf '\n%sĐã chọn %d package:%s\n' "$C_CYAN" "${#SELECTED_PKGS[@]}" "$C_RESET"
+    for pkg in "${SELECTED_PKGS[@]}"; do
+        printf '  %s•%s %s\n' "$C_GREEN" "$C_RESET" "$pkg"
+    done
+    return 0
 }
 
 # ------------------------------------------------------------
@@ -868,22 +949,50 @@ manage_account_profiles() {
 # Chọn package & gán link
 # ------------------------------------------------------------
 select_packages_assign_link() {
-    while true; do
-        clear
-        local pkg link
-        pkg="$(select_package 'Chọn package')" || break
-        printf '%sPlace ID/Link cho %s%s%s: %s' "$C_WHITE" "$C_YELLOW" "$pkg" "$C_WHITE" "$C_RESET"
-        read -r link
-        link="${link//$'\r'/}"
-        if [ -z "$link" ]; then
-            warn_msg "Link trống, bỏ qua."
-            sleep 1
-            continue
+    clear
+    local pkg link shared
+    select_multiple_packages || return
+    printf '\n'
+
+    if [ "${#SELECTED_PKGS[@]}" -gt 1 ]; then
+        printf '%sLink chung cho tất cả (Enter = nhập riêng, 0 = bỏ qua): %s' "$C_WHITE" "$C_RESET"
+        read -r shared
+        shared="${shared//$'\r'/}"
+        if [ "$shared" = "0" ]; then
+            return
         fi
-        conf_set "$CONF_FILE" "$pkg" "$link"
-        ok_msg "Đã lưu $pkg"
-        sleep 1
+        if [ -n "$shared" ]; then
+            for pkg in "${SELECTED_PKGS[@]}"; do
+                if conf_set "$CONF_FILE" "$pkg" "$shared"; then
+                    ok_msg "Đã lưu $pkg"
+                else
+                    warn_msg "Không lưu được $pkg"
+                fi
+            done
+            pause_key
+            return
+        fi
+    fi
+
+    for pkg in "${SELECTED_PKGS[@]}"; do
+        while true; do
+            printf '%sPlace ID/Link cho %s%s%s (0=bỏ qua): %s' "$C_WHITE" "$C_YELLOW" "$pkg" "$C_WHITE" "$C_RESET"
+            read -r link
+            link="${link//$'\r'/}"
+            if [ -z "$link" ]; then
+                warn_msg "Link trống."
+                continue
+            fi
+            [ "$link" = "0" ] && break
+            if conf_set "$CONF_FILE" "$pkg" "$link"; then
+                ok_msg "Đã lưu $pkg"
+            else
+                warn_msg "Không lưu được $pkg"
+            fi
+            break
+        done
     done
+    pause_key
 }
 
 list_selected_packages() {
@@ -1387,7 +1496,7 @@ main_menu() {
         printf '%s┌── Auto Rejoin ────────────────────────────┐%s\n' "$C_CYAN" "$C_RESET"
         printf '│ %s1%s  Start auto rejoin + uptime            │\n' "$C_YELLOW" "$C_RESET"
         printf '%s├── Server Setup ───────────────────────────┤%s\n' "$C_CYAN" "$C_RESET"
-        printf '│ %s2%s  Select app & assign link            │\n' "$C_YELLOW" "$C_RESET"
+        printf '│ %s2%s  Select apps & assign link           │\n' "$C_YELLOW" "$C_RESET"
         printf '│ %s3%s  List selected packages                │\n' "$C_YELLOW" "$C_RESET"
         printf '│ %s4%s  Auto-select all with one link         │\n' "$C_YELLOW" "$C_RESET"
         printf '%s├── Tabs ───────────────────────────────────┤%s\n' "$C_CYAN" "$C_RESET"

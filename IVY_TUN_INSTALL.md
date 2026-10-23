@@ -1,4 +1,4 @@
-# Ivy TUN v2.1 - Hướng dẫn cài đặt
+# Ivy TUN v2.2 - Hướng dẫn cài đặt
 
 > **Chỉ dùng với thiết bị và tài khoản Roblox của chính bạn.**
 > Cookie `.ROBLOSECURITY` là chìa khóa đăng nhập. Không gửi `profiles.conf`, `cookie.txt`, file export hoặc ảnh chụp màn hình có cookie cho bất kỳ ai.
@@ -20,6 +20,7 @@ Bản gốc trong file bạn gửi đã được viết lại và tối ưu:
 - Có file log `ivy-tun.log` (không ghi cookie).
 - Có thể đổi thư mục cấu hình bằng biến `IVY_TUN_DIR`.
 - Mục **2** và **11** quét **tất cả app đã cài** (kể cả app ở user khác hoặc app clone), không chỉ riêng app Roblox. App Roblox-like được xếp lên trước.
+- Mục **2** cho phép chọn **nhiều package cùng lúc**: nhập số cách nhau bằng dấu cách, bấm `0` để xác nhận. Sau đó có thể gán 1 link chung hoặc nhập link riêng cho từng package.
 
 ## 2. Yêu cầu
 
@@ -119,7 +120,7 @@ Màn hình chính có các mục:
 
 ```text
 1  Start auto rejoin + uptime
-2  Select app & assign link
+2  Select apps & assign link
 3  List selected packages
 4  Auto-select all with one link
 5  Open all Roblox tabs
@@ -132,13 +133,22 @@ Màn hình chính có các mục:
 12 Thoát
 ```
 
-### Bước 6.1 — Chọn app và link server
+### Bước 6.1 — Chọn một hoặc nhiều app và link server
 
 Chọn **2**:
 
 1. Script in danh sách **tất cả app đã cài**; app Roblox-like xếp trước.
-2. Nhập số thứ tự của app (hoặc nhập thẳng package name).
-3. Nhập Place ID hoặc link server.
+2. Nhập một hoặc nhiều số thứ tự, cách nhau bằng dấu cách. Có thể nhập từng dòng.
+3. Bấm `0` để xác nhận danh sách package đã chọn.
+4. Nếu chọn nhiều package, nhập **link chung** cho tất cả; hoặc bấm Enter để nhập link riêng cho từng package.
+5. Nhập Place ID hoặc link server. Nhập `0` để bỏ qua package đó.
+
+Ví dụ chọn 2 package:
+
+```text
+Package (0=xác nhận): 1 2 0
+Link chung cho tất cả (Enter = nhập riêng, 0 = bỏ qua): 1234567890
+```
 
 Ví dụ link hợp lệ:
 
@@ -149,9 +159,9 @@ roblox://placeId=1234567890
 roblox://placeId=1234567890&linkCode=ABCDEF
 ```
 
-Lặp lại cho từng app. Nhập `0` để thoát.
+Script lưu các package đã chọn rồi quay lại menu chính.
 
-Nếu tất cả app dùng chung một link, chọn **4**, nhập link một lần. **Lưu ý: mục 4 sẽ ghi đè toàn bộ `packages.conf` cũ.**
+Nếu tất cả app Roblox-like dùng chung một link, có thể chọn **4** để tự gán nhanh. **Lưu ý: mục 4 sẽ ghi đè toàn bộ `packages.conf` cũ.**
 
 Kiểm tra bằng mục **3**.
 
@@ -320,7 +330,7 @@ pkg install -y curl
 ### Không thấy package Roblox/Delta
 
 - Chạy mục 11 để xem **tất cả app đã cài** mà script quét được.
-- Bản 2.1 quét cả user hiện tại, `--user 0` và `--user all`, nên app clone ở user khác cũng sẽ hiện.
+- Từ bản 2.1, script quét cả user hiện tại, `--user 0` và `--user all`, nên app clone ở user khác cũng sẽ hiện.
 - Nếu app là bản clone đổi tên package, nhập thẳng package name ở mục 2.
 - Kiểm tra app đã cài cho user hiện tại chưa bằng `pm list packages | grep <tên>`, hoặc chạy `su -c "pm list packages --user all -3"`.
 
@@ -407,8 +417,8 @@ sha256sum /sdcard/Download/ivy-tun.sh
 Hash của bản script đi kèm:
 
 ```text
-SHA256: 699E4EBEE399961A3897641D7B8CE2EF41365D86287C38C7B94FB4B0C31B1175
-Bytes:  53504
+SHA256: 988E0AEDC2F851C63CABA1F5B2F112DEF0D7D5C701801EE554505A8E344AA788
+Bytes:  57274
 ```
 
 Nếu hash khác, file có thể bị chỉnh sửa hoặc copy lỗi.
