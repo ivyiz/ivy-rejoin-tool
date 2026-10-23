@@ -1,4 +1,4 @@
-# Ivy TUN v2.2.1 - Hướng dẫn cài đặt
+# Ivy TUN v2.3.0 - Hướng dẫn cài đặt
 
 > **Chỉ dùng với thiết bị và tài khoản Roblox của chính bạn.**
 > Cookie `.ROBLOSECURITY` là chìa khóa đăng nhập. Không gửi `profiles.conf`, `cookie.txt`, file export hoặc ảnh chụp màn hình có cookie cho bất kỳ ai.
@@ -21,6 +21,8 @@ Bản gốc trong file bạn gửi đã được viết lại và tối ưu:
 - Có thể đổi thư mục cấu hình bằng biến `IVY_TUN_DIR`.
 - Mục **2** và **11** quét **tất cả app đã cài** (kể cả app ở user khác hoặc app clone), không chỉ riêng app Roblox. App Roblox-like được xếp lên trước.
 - Mục **2** cho phép chọn **nhiều package cùng lúc**: nhập số cách nhau bằng dấu cách, bấm `0` để xác nhận. Sau đó phải nhập **Place ID/Link riêng cho từng package**.
+- Auto-rejoin tự bật `termux-wake-lock` (nếu có) để Termux không bị ngủ khi chuyển sang Roblox.
+- Nhận diện disconnect theo **tất cả PID** của package và mở rộng mẫu log (Leave, Disconnected, Connection lost, Game left, v.v.).
 
 ## 2. Yêu cầu
 
@@ -242,6 +244,18 @@ Script sẽ:
 
 Nhấn **Ctrl + C** để dừng auto-rejoin và quay lại menu.
 
+### Giữ tool chạy khi đang ở trong Roblox
+
+Khi bạn chuyển sang Roblox, Termux bị đưa xuống nền. Nếu Android tạm dừng hoặc kill Termux, tool sẽ không rejoin được.
+
+- Script tự gọi `termux-wake-lock` khi bắt đầu auto-rejoin (nếu lệnh này có sẵn).
+- Nếu vẫn bị dừng, chạy trước khi mở tool:
+  ```bash
+  termux-wake-lock
+  ```
+- Vào **Cài đặt Android → Ứng dụng → Termux → Pin** và chọn **Không tối ưu hóa pin / Unrestricted**.
+- Không vuốt Termux khỏi recent apps trong lúc auto-rejoin.
+
 ### Tool rejoin hoạt động thế nào?
 
 Tool không dùng accessibility, không tự bấm nút trong game. Nó hoạt động ở tầng Android:
@@ -387,6 +401,16 @@ su -c "screencap -p /sdcard/Download/test.png"
 - Kiểm tra URL webhook còn sống, channel còn tồn tại.
 - Discord có rate limit; đừng đặt chu kỳ quá thấp.
 
+### Bấm Leave nhưng tool không rejoin
+
+- Kiểm tra tool còn chạy: Termux không bị Android kill, đã bật `termux-wake-lock` và tắt tối ưu pin.
+- Script chỉ phát hiện disconnect nếu logcat có mẫu mà script nhận biết. Chạy lệnh này ngay sau khi bấm Leave để xem app ghi gì:
+  ```bash
+  su -c "logcat -d -t 1500 | grep -iE 'leave|disconnect|connection|kick|game|error' | tail -n 60"
+  ```
+- Nếu log không có mẫu disconnect, tool có thể bỏ sót. Cách xử lý tạm thời: đặt **Chu kỳ reset** ngắn hơn (ví dụ 5 phút) để tool tự mở lại app.
+- Nếu app bị treo nhưng PID vẫn còn, tool cũng có thể không phát hiện; cần force-stop hoặc chờ chu kỳ reset.
+
 ### Auto-rejoin rejoin liên tục
 
 - Tăng `Delay rejoin` lên 15–30 giây.
@@ -438,8 +462,8 @@ sha256sum /sdcard/Download/ivy-tun.sh
 Hash của bản script đi kèm:
 
 ```text
-SHA256: 782F6E0BA69738CD77C489D7D9C2BC8C6BC92D33F301EB4753D3D8806485EDA5
-Bytes:  56710
+SHA256: 79B09CCCF1619871DD0A720E4EFF37C803F324CF93CCA87479AE7ED656395CD6
+Bytes:  57825
 ```
 
 Nếu hash khác, file có thể bị chỉnh sửa hoặc copy lỗi.

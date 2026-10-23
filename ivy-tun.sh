@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================================
-# Ivy TUN v2.0
+# Ivy TUN v2.3
 # Optimized multi-account Roblox helper for rooted Android + Termux.
 #
 # CHỈ DÙNG VỚI THIẾT BỊ VÀ TÀI KHOẢN CỦA BẠN.
@@ -11,7 +11,7 @@
 set -o pipefail
 umask 077
 
-SCRIPT_VERSION="2.2.1"
+SCRIPT_VERSION="2.3"
 
 # ------------------------------------------------------------
 # Đường dẫn
@@ -126,6 +126,8 @@ HAS_SCREENCAP=1
 command -v screencap >/dev/null 2>&1 || HAS_SCREENCAP=0
 HAS_MONKEY=1
 command -v monkey >/dev/null 2>&1 || HAS_MONKEY=0
+HAS_WAKE_LOCK=1
+command -v termux-wake-lock >/dev/null 2>&1 || HAS_WAKE_LOCK=0
 
 # ------------------------------------------------------------
 # Biến toàn cục cho auto rejoin / webhook uptime
@@ -134,6 +136,7 @@ UPTIME_PID=""
 AUTO_RUNNING=0
 IN_AUTO=0
 LOGCAT_SNAPSHOT=""
+WAKE_LOCK_HELD=0
 
 # ------------------------------------------------------------
 # Hàm tiện ích
@@ -160,6 +163,23 @@ warn_msg() {
 pause_key() {
     printf '\n%sBấm Enter để tiếp tục...%s' "$C_WHITE" "$C_RESET"
     read -r _
+}
+
+# Giữ CPU/Termux không ngủ khi auto-rejoin chạy nền.
+acquire_wake_lock() {
+    [ "$HAS_WAKE_LOCK" -eq 1 ] || return 0
+    [ "$WAKE_LOCK_HELD" -eq 1 ] && return 0
+    if termux-wake-lock >/dev/null 2>&1; then
+        WAKE_LOCK_HELD=1
+        log_line "INFO wake-lock acquired"
+    fi
+}
+
+release_wake_lock() {
+    [ "$WAKE_LOCK_HELD" -eq 1 ] || return 0
+    termux-wake-unlock >/dev/null 2>&1 || true
+    WAKE_LOCK_HELD=0
+    log_line "INFO wake-lock released"
 }
 
 is_valid_pkg() {
@@ -634,6 +654,7 @@ stop_uptime() {
 
 cleanup() {
     stop_uptime
+    release_wake_lock
     if [ "$HAS_TPUT" -eq 1 ]; then
         tput cnorm 2>/dev/null || printf '\033[?25h'
     else
@@ -1263,11 +1284,16 @@ rejoin_pkg() {
 }
 
 recent_disconnect() {
-    local pid="$1" out="${LOGCAT_SNAPSHOT:-}"
+    local pids="$1" out="${LOGCAT_SNAPSHOT:-}" re="" p
     [ -n "$out" ] || return 1
+    for p in $pids; do
+        [[ "$p" =~ ^[0-9]+$ ]] || continue
+        re="${re:+$re|}$p"
+    done
+    [ -n "$re" ] || return 1
     printf '%s' "$out" \
-        | grep -E "(^|[[:space:]])${pid}([[:space:]]|$)" \
-        | grep -qiE 'Game ended|Disconnecting from server|Connection lost|Lost connection|Disconnected from|ErrorPrompt|kicked|leaveGame|User requested leave'
+        | grep -E "(^|[[:space:]])(${re})([[:space:]]|$)" \
+        | grep -qiE 'Game ended|Game left|Left game|Left the game|GameLeave|LeaveGame|leaveGame|Leaving game|Leaving experience|Leave experience|GameExit|Game exit|Exit game|GameEnd|User requested leave|User left|Experience.*(ended|left|closed)|Disconnected|Disconnecting from server|Connection lost|Lost connection|Connection closed|Network.*(lost|error|disconnect)|Socket.*(closed|lost)|kicked|ErrorPrompt|Error.*(connection|network|disconnect)|Reconnect|Rejoining'
 }
 
 start_auto_rejoin() {
@@ -1300,6 +1326,7 @@ start_auto_rejoin() {
         return
     fi
 
+    acquire_wake_lock
     local reset_in delay_in max_runtime interval
     printf '%sChu kỳ reset (phút, Enter=30, 0=tắt): %s' "$C_WHITE" "$C_RESET"
     read -r reset_in
@@ -1368,14 +1395,14 @@ start_auto_rejoin() {
         UPTIME_PID=$!
     fi
 
-    local pid state state_text age since_rejoin remain remain_text
+    local pid pids state state_text age since_rejoin remain remain_text
     while [ "$AUTO_RUNNING" -eq 1 ]; do
         printf '\033[H'
         printf '%s┌── [ ROBLOX IN-GAME MONITOR ] ────────────┐%s\n' "$C_CYAN" "$C_RESET"
         now="$(date +%s)"
-        LOGCAT_SNAPSHOT="$(logcat -d -t 800 2>/dev/null)"
+        LOGCAT_SNAPSHOT="$(logcat -d -t 1500 2>/dev/null)"
         if [ -z "$LOGCAT_SNAPSHOT" ]; then
-            LOGCAT_SNAPSHOT="$(logcat -d 2>/dev/null | tail -n 800)"
+            LOGCAT_SNAPSHOT="$(logcat -d 2>/dev/null | tail -n 1500)"
         fi
 
         for i in "${!PKGS[@]}"; do
@@ -1383,7 +1410,8 @@ start_auto_rejoin() {
             link="${LINKS[$i]}"
             [ "$AUTO_RUNNING" -eq 1 ] || break
 
-            pid="$(pidof "$pkg" 2>/dev/null | awk '{print $1}')"
+            pids="$(pidof "$pkg" 2>/dev/null | tr '\n' ' ')"
+            pid="${pids%% *}"
             age=$((now - ${CYCLE_START[$pkg]:-$now}))
             since_rejoin=$((now - ${LAST_REJOIN[$pkg]:-0}))
             state="OK"
@@ -1395,7 +1423,7 @@ start_auto_rejoin() {
             elif [ -z "$pid" ]; then
                 state="CRASHED"
                 state_text="VĂNG APP"
-            elif recent_disconnect "$pid"; then
+            elif recent_disconnect "$pids"; then
                 state="DISCONNECTED"
                 state_text="MẤT KẾT NỐI"
             fi
@@ -1443,6 +1471,7 @@ start_auto_rejoin() {
     done
 
     stop_uptime
+    release_wake_lock
     IN_AUTO=0
     AUTO_RUNNING=0
     if [ "$HAS_TPUT" -eq 1 ]; then

@@ -41,6 +41,8 @@ Grant root access to Termux when Magisk/KernelSU asks.
 - `1`: start auto-rejoin
 - `Ctrl+C`: stop auto-rejoin
 
+Auto-rejoin checks each app's PID and logcat, relaunches after crashes or recognized disconnects, and acquires a Termux wake lock while running. Keep Termux alive and set it to unrestricted battery usage; otherwise Android may stop the monitor when you switch to Roblox.
+
 ## Security
 
 - Use only with your own Roblox accounts.
