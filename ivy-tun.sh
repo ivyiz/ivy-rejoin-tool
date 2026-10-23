@@ -11,7 +11,7 @@
 set -o pipefail
 umask 077
 
-SCRIPT_VERSION="2.0"
+SCRIPT_VERSION="2.1"
 
 # ------------------------------------------------------------
 # Đường dẫn
@@ -243,20 +243,31 @@ conf_del() {
 # ------------------------------------------------------------
 # Danh sách package
 # ------------------------------------------------------------
-get_all_installed_roblox() {
-    local all rbx
-    all="$(pm list packages -3 2>/dev/null | sed 's/^package://' | tr -d '\r' | sort -u)"
-    if [ -z "$all" ]; then
-        all="$(pm list packages --user all -3 2>/dev/null | sed 's/^package://' | tr -d '\r' | sort -u)"
-    fi
+# Tất cả app người dùng đã cài, gồm cả app ở user khác / app clone.
+# App Roblox-like được đưa lên trước để dễ chọn.
+get_all_installed_packages() {
+    local all rbx rest
+    all="$(
+        {
+            pm list packages -3 2>/dev/null
+            pm list packages --user all -3 2>/dev/null
+            pm list packages --user 0 -3 2>/dev/null
+            pm list packages 2>/dev/null | grep -iE 'roblox|delta|deltb|fluxus|hydrogen|codex|arceus|rejoin|rbx'
+            pm list packages --user all 2>/dev/null | grep -iE 'roblox|delta|deltb|fluxus|hydrogen|codex|arceus|rejoin|rbx'
+        } | sed 's/^package://' | tr -d '\r' | sed '/^[[:space:]]*$/d' | sort -u
+    )"
     [ -z "$all" ] && return 0
 
     rbx="$(printf '%s\n' "$all" | grep -iE 'roblox|delta|deltb|fluxus|hydrogen|codex|arceus|rejoin|rbx' || true)"
-    if [ -n "$rbx" ]; then
-        printf '%s\n' "$rbx"
-    else
-        printf '%s\n' "$all" | grep -vE '^(com\.termux|bin\.mt\.plus|com\.og\.|com\.android|org\.telegram|com\.google\.)' || true
-    fi
+    rest="$(printf '%s\n' "$all" | grep -ivE 'roblox|delta|deltb|fluxus|hydrogen|codex|arceus|rejoin|rbx' || true)"
+    [ -n "$rbx" ] && printf '%s\n' "$rbx"
+    [ -n "$rest" ] && printf '%s\n' "$rest"
+}
+
+# Chỉ các package Roblox-like, dùng cho auto-rejoin/cookie/export.
+get_all_installed_roblox() {
+    get_all_installed_packages \
+        | grep -iE 'roblox|delta|deltb|fluxus|hydrogen|codex|arceus|rejoin|rbx' || true
 }
 
 # In danh sách có số thứ tự, trả về package được chọn qua stdout
@@ -265,7 +276,7 @@ select_package() {
     local -a pkgs=()
     local i sel
 
-    mapfile -t pkgs < <(get_all_installed_roblox)
+    mapfile -t pkgs < <(get_all_installed_packages)
     if [ "${#pkgs[@]}" -eq 0 ]; then
         warn_msg "Không tìm thấy package nào."
         return 1
@@ -1376,7 +1387,7 @@ main_menu() {
         printf '%s┌── Auto Rejoin ────────────────────────────┐%s\n' "$C_CYAN" "$C_RESET"
         printf '│ %s1%s  Start auto rejoin + uptime            │\n' "$C_YELLOW" "$C_RESET"
         printf '%s├── Server Setup ───────────────────────────┤%s\n' "$C_CYAN" "$C_RESET"
-        printf '│ %s2%s  Select package & assign link          │\n' "$C_YELLOW" "$C_RESET"
+        printf '│ %s2%s  Select app & assign link            │\n' "$C_YELLOW" "$C_RESET"
         printf '│ %s3%s  List selected packages                │\n' "$C_YELLOW" "$C_RESET"
         printf '│ %s4%s  Auto-select all with one link         │\n' "$C_YELLOW" "$C_RESET"
         printf '%s├── Tabs ───────────────────────────────────┤%s\n' "$C_CYAN" "$C_RESET"
@@ -1388,7 +1399,7 @@ main_menu() {
         printf '│ %s9%s  Export cookies                        │\n' "$C_YELLOW" "$C_RESET"
         printf '%s├── Discord & System ───────────────────────┤%s\n' "$C_CYAN" "$C_RESET"
         printf '│ %s10%s Cấu hình Discord webhook/uptime       │\n' "$C_YELLOW" "$C_RESET"
-        printf '│ %s11%s Xem toàn bộ package quét được         │\n' "$C_YELLOW" "$C_RESET"
+        printf '│ %s11%s Xem tất cả package đã cài            │\n' "$C_YELLOW" "$C_RESET"
         printf '│ %s12%s Thoát                                │\n' "$C_RED" "$C_RESET"
         printf '%s└───────────────────────────────────────────┘%s\n\n' "$C_CYAN" "$C_RESET"
 
@@ -1408,8 +1419,8 @@ main_menu() {
             10) manage_discord_webhook ;;
             11)
                 clear
-                printf '%sToàn bộ package quét được:%s\n\n' "$C_CYAN" "$C_RESET"
-                get_all_installed_roblox | while IFS= read -r p; do
+                printf '%sTất cả package đã cài:%s\n\n' "$C_CYAN" "$C_RESET"
+                get_all_installed_packages | while IFS= read -r p; do
                     printf '  %s•%s %s\n' "$C_GREEN" "$C_RESET" "$p"
                 done
                 pause_key

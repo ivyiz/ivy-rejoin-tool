@@ -14,7 +14,7 @@ Permanent raw download:
 https://raw.githubusercontent.com/ivyiz/ivy-rejoin-tool/main/ivy-tun.sh
 ```
 
-Release download (after a release is published):
+Release download:
 
 ```text
 https://github.com/ivyiz/ivy-rejoin-tool/releases/latest/download/ivy-tun.zip
@@ -22,20 +22,19 @@ https://github.com/ivyiz/ivy-rejoin-tool/releases/latest/download/ivy-tun.zip
 
 ## Quick install
 
-```bash
-pkg update -y
-pkg install -y bash coreutils curl sqlite ncurses-utils unzip
-termux-setup-storage
+One line (script downloads to Termux home as `i`):
 
-curl -L -o /sdcard/Download/ivy-tun.sh "https://raw.githubusercontent.com/ivyiz/ivy-rejoin-tool/main/ivy-tun.sh"
-bash /sdcard/Download/ivy-tun.sh
+```bash
+pkg install -y curl && curl -L -o i https://github.com/ivyiz/ivy-rejoin-tool/raw/main/ivy-tun.sh && bash i
 ```
 
 Grant root access to Termux when Magisk/KernelSU asks.
 
 ## Usage
 
-- `2` or `4`: select apps and assign Place ID/server link
+- `2`: select any installed app and assign a Place ID/server link
+- `11`: list all installed packages (Roblox-like packages first)
+- `4`: auto-assign one link to all detected Roblox-like packages
 - `6`: login with `.ROBLOSECURITY` cookie
 - `7`: manage profiles
 - `10`: configure Discord webhook/uptime

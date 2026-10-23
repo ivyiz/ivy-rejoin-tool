@@ -1,4 +1,4 @@
-# Ivy TUN v2.0 - Hướng dẫn cài đặt
+# Ivy TUN v2.1 - Hướng dẫn cài đặt
 
 > **Chỉ dùng với thiết bị và tài khoản Roblox của chính bạn.**
 > Cookie `.ROBLOSECURITY` là chìa khóa đăng nhập. Không gửi `profiles.conf`, `cookie.txt`, file export hoặc ảnh chụp màn hình có cookie cho bất kỳ ai.
@@ -19,6 +19,7 @@ Bản gốc trong file bạn gửi đã được viết lại và tối ưu:
 - Không in full cookie ra màn hình; chỉ hiện dạng `abcd...wxyz`.
 - Có file log `ivy-tun.log` (không ghi cookie).
 - Có thể đổi thư mục cấu hình bằng biến `IVY_TUN_DIR`.
+- Mục **2** và **11** quét **tất cả app đã cài** (kể cả app ở user khác hoặc app clone), không chỉ riêng app Roblox. App Roblox-like được xếp lên trước.
 
 ## 2. Yêu cầu
 
@@ -118,7 +119,7 @@ Màn hình chính có các mục:
 
 ```text
 1  Start auto rejoin + uptime
-2  Select package & assign link
+2  Select app & assign link
 3  List selected packages
 4  Auto-select all with one link
 5  Open all Roblox tabs
@@ -127,7 +128,7 @@ Màn hình chính có các mục:
 8  Logout Roblox
 9  Export cookies
 10 Cấu hình Discord webhook/uptime
-11 Xem toàn bộ package quét được
+11 Xem tất cả package đã cài
 12 Thoát
 ```
 
@@ -135,7 +136,7 @@ Màn hình chính có các mục:
 
 Chọn **2**:
 
-1. Script in danh sách package đã cài.
+1. Script in danh sách **tất cả app đã cài**; app Roblox-like xếp trước.
 2. Nhập số thứ tự của app (hoặc nhập thẳng package name).
 3. Nhập Place ID hoặc link server.
 
@@ -264,7 +265,7 @@ Nếu file export trống, có thể WebView đang dùng `encrypted_value`; scri
 
 ### Xem package — mục 11
 
-In toàn bộ package mà script quét được. Dùng để kiểm tra tên package của app clone.
+In **tất cả app đã cài** mà script quét được, gồm app ở user khác và app clone. App Roblox-like được xếp lên trước. Dùng để kiểm tra tên package của app clone.
 
 ## 9. Đổi thư mục cấu hình (khuyến nghị)
 
@@ -318,9 +319,10 @@ pkg install -y curl
 
 ### Không thấy package Roblox/Delta
 
-- Chạy mục 11 để xem script quét được gì.
+- Chạy mục 11 để xem **tất cả app đã cài** mà script quét được.
+- Bản 2.1 quét cả user hiện tại, `--user 0` và `--user all`, nên app clone ở user khác cũng sẽ hiện.
 - Nếu app là bản clone đổi tên package, nhập thẳng package name ở mục 2.
-- Kiểm tra app đã cài cho user hiện tại chưa.
+- Kiểm tra app đã cài cho user hiện tại chưa bằng `pm list packages | grep <tên>`, hoặc chạy `su -c "pm list packages --user all -3"`.
 
 ### Đã ghi cookie nhưng app vẫn chưa đăng nhập
 
@@ -405,8 +407,8 @@ sha256sum /sdcard/Download/ivy-tun.sh
 Hash của bản script đi kèm:
 
 ```text
-SHA256: C3BACAD3B55544D1DA89C31DF7EB6290AC3D70F9A57FAD944B66AA97AC89364C
-Bytes:  52856
+SHA256: 699E4EBEE399961A3897641D7B8CE2EF41365D86287C38C7B94FB4B0C31B1175
+Bytes:  53504
 ```
 
 Nếu hash khác, file có thể bị chỉnh sửa hoặc copy lỗi.
