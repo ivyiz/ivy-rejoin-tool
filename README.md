@@ -25,7 +25,7 @@ https://github.com/ivyiz/ivy-rejoin-tool/releases/latest/download/ivy-tun.zip
 One line (script downloads to Termux home as `i`):
 
 ```bash
-pkg install -y curl && curl -L -o i https://github.com/ivyiz/ivy-rejoin-tool/raw/main/ivy-tun.sh && bash i
+pkg install -y curl sqlite ncurses-utils && curl -L -o i https://github.com/ivyiz/ivy-rejoin-tool/raw/main/ivy-tun.sh && bash i
 ```
 
 Grant root access to Termux when Magisk/KernelSU asks.
