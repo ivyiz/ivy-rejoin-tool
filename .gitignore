@@ -1,0 +1,14 @@
+# Local secrets and runtime data
+cookie.txt
+profiles.conf
+packages.conf
+discord.conf
+ivy-tun.log
+shouko.log
+roblox_sessions_export.txt
+*.webhook_shot.*.png
+
+# OS/editor
+.DS_Store
+Thumbs.db
+*.swp
