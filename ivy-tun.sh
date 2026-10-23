@@ -11,7 +11,7 @@
 set -o pipefail
 umask 077
 
-SCRIPT_VERSION="2.2"
+SCRIPT_VERSION="2.2.1"
 
 # ------------------------------------------------------------
 # Đường dẫn
@@ -950,29 +950,9 @@ manage_account_profiles() {
 # ------------------------------------------------------------
 select_packages_assign_link() {
     clear
-    local pkg link shared
+    local pkg link
     select_multiple_packages || return
-    printf '\n'
-
-    if [ "${#SELECTED_PKGS[@]}" -gt 1 ]; then
-        printf '%sLink chung cho tất cả (Enter = nhập riêng, 0 = bỏ qua): %s' "$C_WHITE" "$C_RESET"
-        read -r shared
-        shared="${shared//$'\r'/}"
-        if [ "$shared" = "0" ]; then
-            return
-        fi
-        if [ -n "$shared" ]; then
-            for pkg in "${SELECTED_PKGS[@]}"; do
-                if conf_set "$CONF_FILE" "$pkg" "$shared"; then
-                    ok_msg "Đã lưu $pkg"
-                else
-                    warn_msg "Không lưu được $pkg"
-                fi
-            done
-            pause_key
-            return
-        fi
-    fi
+    printf '\n%sNhập Place ID/Link riêng cho từng package đã chọn.%s\n' "$C_CYAN" "$C_RESET"
 
     for pkg in "${SELECTED_PKGS[@]}"; do
         while true; do

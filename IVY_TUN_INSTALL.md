@@ -1,4 +1,4 @@
-# Ivy TUN v2.2 - Hướng dẫn cài đặt
+# Ivy TUN v2.2.1 - Hướng dẫn cài đặt
 
 > **Chỉ dùng với thiết bị và tài khoản Roblox của chính bạn.**
 > Cookie `.ROBLOSECURITY` là chìa khóa đăng nhập. Không gửi `profiles.conf`, `cookie.txt`, file export hoặc ảnh chụp màn hình có cookie cho bất kỳ ai.
@@ -20,7 +20,7 @@ Bản gốc trong file bạn gửi đã được viết lại và tối ưu:
 - Có file log `ivy-tun.log` (không ghi cookie).
 - Có thể đổi thư mục cấu hình bằng biến `IVY_TUN_DIR`.
 - Mục **2** và **11** quét **tất cả app đã cài** (kể cả app ở user khác hoặc app clone), không chỉ riêng app Roblox. App Roblox-like được xếp lên trước.
-- Mục **2** cho phép chọn **nhiều package cùng lúc**: nhập số cách nhau bằng dấu cách, bấm `0` để xác nhận. Sau đó có thể gán 1 link chung hoặc nhập link riêng cho từng package.
+- Mục **2** cho phép chọn **nhiều package cùng lúc**: nhập số cách nhau bằng dấu cách, bấm `0` để xác nhận. Sau đó phải nhập **Place ID/Link riêng cho từng package**.
 
 ## 2. Yêu cầu
 
@@ -140,14 +140,14 @@ Chọn **2**:
 1. Script in danh sách **tất cả app đã cài**; app Roblox-like xếp trước.
 2. Nhập một hoặc nhiều số thứ tự, cách nhau bằng dấu cách. Có thể nhập từng dòng.
 3. Bấm `0` để xác nhận danh sách package đã chọn.
-4. Nếu chọn nhiều package, nhập **link chung** cho tất cả; hoặc bấm Enter để nhập link riêng cho từng package.
-5. Nhập Place ID hoặc link server. Nhập `0` để bỏ qua package đó.
+4. Script lần lượt hỏi **Place ID/Link riêng cho từng package**. Nhập `0` để bỏ qua package đó.
 
 Ví dụ chọn 2 package:
 
 ```text
 Package (0=xác nhận): 1 2 0
-Link chung cho tất cả (Enter = nhập riêng, 0 = bỏ qua): 1234567890
+Place ID/Link cho com.roblox.client (0=bỏ qua): 1234567890
+Place ID/Link cho com.moons.lite (0=bỏ qua): 9876543210
 ```
 
 Ví dụ link hợp lệ:
@@ -161,7 +161,7 @@ roblox://placeId=1234567890&linkCode=ABCDEF
 
 Script lưu các package đã chọn rồi quay lại menu chính.
 
-Nếu tất cả app Roblox-like dùng chung một link, có thể chọn **4** để tự gán nhanh. **Lưu ý: mục 4 sẽ ghi đè toàn bộ `packages.conf` cũ.**
+Mục **4** là tùy chọn gán nhanh: chỉ nên dùng khi tất cả app Roblox-like thực sự vào cùng một game. **Lưu ý: mục 4 sẽ ghi đè toàn bộ `packages.conf` cũ.**
 
 Kiểm tra bằng mục **3**.
 
@@ -241,6 +241,27 @@ Script sẽ:
 6. Gửi uptime + ảnh màn hình lên Discord theo chu kỳ (nếu đã cấu hình).
 
 Nhấn **Ctrl + C** để dừng auto-rejoin và quay lại menu.
+
+### Tool rejoin hoạt động thế nào?
+
+Tool không dùng accessibility, không tự bấm nút trong game. Nó hoạt động ở tầng Android:
+
+1. Đọc `packages.conf` để biết package nào đi với Place ID/link nào.
+2. Mở app bằng intent `roblox://placeId=...` (hoặc link server đã nhập).
+3. Mỗi 2 giây kiểm tra `pidof <package>` và đọc snapshot `logcat` gần nhất.
+4. Nếu **PID không còn** (app crash, bị Android kill, bị force-stop) → coi là `CRASHED` → đếm ngược delay → force-stop và mở lại app.
+5. Nếu **PID còn** nhưng logcat của đúng PID đó có mẫu như `Disconnecting from server`, `Connection lost`, `Disconnected from`, `kicked`, `ErrorPrompt` → coi là `DISCONNECTED` → đếm ngược delay → mở lại app.
+6. Sau chu kỳ reset (mặc định 30 phút), tool chủ động force-stop và mở lại app để làm mới phiên.
+7. Nếu đã cấu hình Discord, tool gửi uptime và ảnh màn hình định kỳ.
+
+**Trả lời ngắn:**
+- **App crash / bị kill / văng:** có, tool phát hiện qua PID và mở lại.
+- **Mất kết nối khi app vẫn chạy:** có, nếu logcat có mẫu disconnect mà tool nhận biết.
+- **Mất mạng hoàn toàn:** tool vẫn có thể mở lại app, nhưng app sẽ không vào được game cho đến khi có mạng.
+- **Acc bị logout / cookie hết hạn:** tool chỉ mở lại app, không tự đăng nhập lại. Cần dùng mục 6 để ghi cookie mới.
+- **App crash lặp lại liên tục:** tool sẽ mở lại liên tục nhưng không sửa được nguyên nhân crash (app lỗi, dữ liệu hỏng, server chặn).
+- **Tool chỉ chạy khi Termux và script còn chạy.** Nếu Termux bị Android kill, máy reboot, hoặc script bị dừng, auto-rejoin dừng theo. Tool không phải service chạy nền vĩnh viễn.
+- Việc nhận diện disconnect là **theo mẫu log**, không phải đọc màn hình, nên có thể bỏ sót nếu app đổi log hoặc treo không ghi log.
 
 ## 8. Các chức năng khác
 
@@ -417,8 +438,8 @@ sha256sum /sdcard/Download/ivy-tun.sh
 Hash của bản script đi kèm:
 
 ```text
-SHA256: 988E0AEDC2F851C63CABA1F5B2F112DEF0D7D5C701801EE554505A8E344AA788
-Bytes:  57274
+SHA256: 782F6E0BA69738CD77C489D7D9C2BC8C6BC92D33F301EB4753D3D8806485EDA5
+Bytes:  56710
 ```
 
 Nếu hash khác, file có thể bị chỉnh sửa hoặc copy lỗi.

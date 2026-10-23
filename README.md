@@ -32,7 +32,7 @@ Grant root access to Termux when Magisk/KernelSU asks.
 
 ## Usage
 
-- `2`: select one or more installed apps, press `0` to confirm, then assign a shared or per-app Place ID/server link
+- `2`: select one or more installed apps, press `0` to confirm, then enter a separate Place ID/server link for each app
 - `11`: list all installed packages (Roblox-like packages first)
 - `4`: auto-assign one link to all detected Roblox-like packages
 - `6`: login with `.ROBLOSECURITY` cookie
