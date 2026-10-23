@@ -1,4 +1,4 @@
-# Ivy TUN v2.3.0 - Hướng dẫn cài đặt
+# Ivy TUN v2.3.1 - Hướng dẫn cài đặt
 
 > **Chỉ dùng với thiết bị và tài khoản Roblox của chính bạn.**
 > Cookie `.ROBLOSECURITY` là chìa khóa đăng nhập. Không gửi `profiles.conf`, `cookie.txt`, file export hoặc ảnh chụp màn hình có cookie cho bất kỳ ai.
@@ -22,7 +22,7 @@ Bản gốc trong file bạn gửi đã được viết lại và tối ưu:
 - Mục **2** và **11** quét **tất cả app đã cài** (kể cả app ở user khác hoặc app clone), không chỉ riêng app Roblox. App Roblox-like được xếp lên trước.
 - Mục **2** cho phép chọn **nhiều package cùng lúc**: nhập số cách nhau bằng dấu cách, bấm `0` để xác nhận. Sau đó phải nhập **Place ID/Link riêng cho từng package**.
 - Auto-rejoin tự bật `termux-wake-lock` (nếu có) để Termux không bị ngủ khi chuyển sang Roblox.
-- Nhận diện disconnect theo **tất cả PID** của package và mở rộng mẫu log (Leave, Disconnected, Connection lost, Game left, v.v.).
+- Nhận diện disconnect theo **tất cả PID** của package, đọc log riêng của từng PID thay vì chỉ đọc log toàn hệ thống, và mở rộng mẫu log (Leave, Disconnected, Connection lost, Game left, v.v.).
 
 ## 2. Yêu cầu
 
@@ -404,10 +404,15 @@ su -c "screencap -p /sdcard/Download/test.png"
 ### Bấm Leave nhưng tool không rejoin
 
 - Kiểm tra tool còn chạy: Termux không bị Android kill, đã bật `termux-wake-lock` và tắt tối ưu pin.
-- Script chỉ phát hiện disconnect nếu logcat có mẫu mà script nhận biết. Chạy lệnh này ngay sau khi bấm Leave để xem app ghi gì:
+- Script chỉ phát hiện disconnect nếu logcat có mẫu mà script nhận biết. Chạy lệnh này ngay sau khi bấm Leave để xem log **của đúng PID Roblox**:
   ```bash
-  su -c "logcat -d -t 1500 | grep -iE 'leave|disconnect|connection|kick|game|error' | tail -n 60"
+  pkg=com.roblox.client
+  pids=$(su -c "pidof $pkg")
+  echo "PIDs: $pids"
+  re=${pids// /|}
+  su -c "logcat -d -t 3000 -v threadtime | grep -E '(^| )($re)( |$)' | tail -n 120"
   ```
+  Thay `com.roblox.client` bằng package thật của bạn (xem mục 11).
 - Nếu log không có mẫu disconnect, tool có thể bỏ sót. Cách xử lý tạm thời: đặt **Chu kỳ reset** ngắn hơn (ví dụ 5 phút) để tool tự mở lại app.
 - Nếu app bị treo nhưng PID vẫn còn, tool cũng có thể không phát hiện; cần force-stop hoặc chờ chu kỳ reset.
 
@@ -462,8 +467,8 @@ sha256sum /sdcard/Download/ivy-tun.sh
 Hash của bản script đi kèm:
 
 ```text
-SHA256: 79B09CCCF1619871DD0A720E4EFF37C803F324CF93CCA87479AE7ED656395CD6
-Bytes:  57825
+SHA256: ACD4098BFE248D1C8FA8267C6E308299DD05E1EB630D935C954C86E37B9819D0
+Bytes:  58283
 ```
 
 Nếu hash khác, file có thể bị chỉnh sửa hoặc copy lỗi.

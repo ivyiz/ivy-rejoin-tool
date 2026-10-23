@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================================
-# Ivy TUN v2.3
+# Ivy TUN v2.3.1
 # Optimized multi-account Roblox helper for rooted Android + Termux.
 #
 # CHỈ DÙNG VỚI THIẾT BỊ VÀ TÀI KHOẢN CỦA BẠN.
@@ -11,7 +11,7 @@
 set -o pipefail
 umask 077
 
-SCRIPT_VERSION="2.3"
+SCRIPT_VERSION="2.3.1"
 
 # ------------------------------------------------------------
 # Đường dẫn
@@ -1283,8 +1283,17 @@ rejoin_pkg() {
     return 0
 }
 
+package_logcat() {
+    local pids="$1" p out=""
+    for p in $pids; do
+        [[ "$p" =~ ^[0-9]+$ ]] || continue
+        out+="$(logcat -d --pid="$p" -t 500 2>/dev/null)"$'\n'
+    done
+    printf '%s' "$out"
+}
+
 recent_disconnect() {
-    local pids="$1" out="${LOGCAT_SNAPSHOT:-}" re="" p
+    local pids="$1" out="${2:-${LOGCAT_SNAPSHOT:-}}" re="" p
     [ -n "$out" ] || return 1
     for p in $pids; do
         [[ "$p" =~ ^[0-9]+$ ]] || continue
@@ -1293,7 +1302,7 @@ recent_disconnect() {
     [ -n "$re" ] || return 1
     printf '%s' "$out" \
         | grep -E "(^|[[:space:]])(${re})([[:space:]]|$)" \
-        | grep -qiE 'Game ended|Game left|Left game|Left the game|GameLeave|LeaveGame|leaveGame|Leaving game|Leaving experience|Leave experience|GameExit|Game exit|Exit game|GameEnd|User requested leave|User left|Experience.*(ended|left|closed)|Disconnected|Disconnecting from server|Connection lost|Lost connection|Connection closed|Network.*(lost|error|disconnect)|Socket.*(closed|lost)|kicked|ErrorPrompt|Error.*(connection|network|disconnect)|Reconnect|Rejoining'
+        | grep -qiE 'Game ended|Game left|Left game|Left the game|GameLeave|LeaveGame|leaveGame|Leaving game|Leaving experience|Leave experience|GameExit|Game exit|Exit game|GameEnd|User requested leave|User left|Experience.*(ended|left|closed)|Disconnected|Disconnecting from server|Connection lost|Lost connection|Connection closed|Connection refused|Failed to connect|Unable to connect|Network.*(lost|error|disconnect)|Socket.*(closed|lost)|kicked|ErrorPrompt|Error.*(connection|network|disconnect)|Reconnect|Rejoining'
 }
 
 start_auto_rejoin() {
@@ -1395,7 +1404,7 @@ start_auto_rejoin() {
         UPTIME_PID=$!
     fi
 
-    local pid pids state state_text age since_rejoin remain remain_text
+    local pid pids pkg_log state state_text age since_rejoin remain remain_text
     while [ "$AUTO_RUNNING" -eq 1 ]; do
         printf '\033[H'
         printf '%s┌── [ ROBLOX IN-GAME MONITOR ] ────────────┐%s\n' "$C_CYAN" "$C_RESET"
@@ -1423,9 +1432,13 @@ start_auto_rejoin() {
             elif [ -z "$pid" ]; then
                 state="CRASHED"
                 state_text="VĂNG APP"
-            elif recent_disconnect "$pids"; then
-                state="DISCONNECTED"
-                state_text="MẤT KẾT NỐI"
+            else
+                pkg_log="$(package_logcat "$pids")"
+                [ -n "$pkg_log" ] || pkg_log="$LOGCAT_SNAPSHOT"
+                if recent_disconnect "$pids" "$pkg_log"; then
+                    state="DISCONNECTED"
+                    state_text="MẤT KẾT NỐI"
+                fi
             fi
 
             if [ "$max_runtime" -gt 0 ] && [ "$age" -ge "$max_runtime" ]; then
