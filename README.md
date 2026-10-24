@@ -38,6 +38,7 @@ Grant root access to Termux when Magisk/KernelSU asks.
 - `6`: login with `.ROBLOSECURITY` cookie
 - `7`: manage profiles
 - `10`: configure Discord webhook/uptime
+- `12`: run in background and enable Termux:Boot autostart
 - `1`: start auto-rejoin
 - `Ctrl+C`: stop auto-rejoin
 

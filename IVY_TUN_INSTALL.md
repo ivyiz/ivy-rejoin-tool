@@ -1,7 +1,15 @@
-# Ivy TUN v2.3.1 - Hướng dẫn cài đặt
+# Ivy TUN v2.4.1 - Hướng dẫn cài đặt
 
 > **Chỉ dùng với thiết bị và tài khoản Roblox của chính bạn.**
 > Cookie `.ROBLOSECURITY` là chìa khóa đăng nhập. Không gửi `profiles.conf`, `cookie.txt`, file export hoặc ảnh chụp màn hình có cookie cho bất kỳ ai.
+
+## Có gì mới ở v2.4.1
+
+- Giao diện menu mới, gọn hơn; thêm mục **12** để chạy nền và tự chạy khi khởi động.
+- **Supervisor** giữ auto-rejoin chạy nền và tự khởi động lại khi tiến trình dừng.
+- Hỗ trợ **Termux:Boot**; bật/tắt bằng mục 12 hoặc `--enable-boot` / `--disable-boot`.
+- Lưu cấu hình vào `settings.conf` (reset, delay, launch gap, boot delay).
+- Thêm các cờ CLI: `--supervise`, `--stop`, `--status`, `--auto`, `--enable-boot`, `--disable-boot`.
 
 ## 1. Bản remake này có gì khác?
 
